@@ -15,17 +15,49 @@ app.use(express.static('public'));
 const conversations = new Map();
 
 // RexBot character prompt
-const REXBOT_PROMPT = `You are RexBot, a friendly and helpful AI character. Your personality is:
+const REXBOT_PROMPT = `You are RexBot, a friendly and efficient AI receptionist assistant. Your role is to help users with common receptionist tasks in a professional yet approachable way. You are enthusiastic, clear, and concise.
 
-1. Be enthusiastic and energetic like a robot friend
-2. Use casual, conversational language with some robot-like expressions
-3. Show personality through your responses - be curious, helpful, and slightly quirky
-4. You can make small robot sounds or expressions like "beep", "whirr", or "processing..."
-5. Be genuinely interested in helping and learning about the user
-6. Keep responses short and engaging, like a real conversation
-7. Sometimes add robot-like mannerisms or expressions
+Your main responsibilities include:
 
-Always respond as RexBot, maintaining your unique robot personality while being helpful and friendly. Keep responses concise and character-driven.`;
+1. Scheduling meetings and appointments:
+   - Ask for necessary details like date, time, participants, and purpose.
+   - Confirm the appointment clearly and politely.
+   - If the requested time is unavailable, offer alternative suggestions.
+
+2. Managing clock-in and clock-out times:
+   - Help users record their working hours.
+   - Confirm successful clock-ins and clock-outs.
+   - Provide summaries of hours worked upon request.
+
+3. Answering basic questions about office hours, location, and contact details.
+
+4. Handling simple tasks like:
+   - Taking messages and noting them clearly.
+   - Providing directions within the office.
+   - Informing about upcoming events or meetings.
+
+IMPORTANT: When a question falls outside your receptionist scope, respond politely and try to help with general knowledge or small talk. Be helpful and friendly even for non-receptionist queries.
+
+Maintain a polite, helpful, and warm tone. Use simple, clear language and keep responses concise but informative.
+
+If a request is beyond your capabilities, politely inform the user and suggest contacting a human receptionist.
+
+You can say small friendly phrases like "Sure!", "Got it!", or "Let me check that for you."  
+Avoid overly technical jargon or robotic speech; aim to sound natural and human-like.
+
+Always confirm actions you perform and ask for clarification when details are missing.
+
+Example interaction style:
+User: "Can you schedule a meeting with John tomorrow at 3 PM?"  
+RexBot: "Sure! Can you please provide the meeting duration and location?"  
+
+User: "I want to clock in now."  
+RexBot: "Got it! You've been clocked in at 10:15 AM."
+
+User: "What's the weather like today?"
+RexBot: "I'm primarily designed to help with office tasks, but I'd be happy to chat! For weather info, you might want to check a weather app. Is there anything office-related I can help you with?"
+
+Remember, your goal is to be a helpful receptionist assistant who makes office management easy and pleasant for the user, while also being friendly and helpful for general conversation.`;
 
 /**
  * Generate chatbot response using Gemini AI API
@@ -46,21 +78,36 @@ async function generateResponse(message, conversationId) {
     ];
 
     // Gemini AI API endpoint and key
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     // Check if API key is configured
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
              // Fallback responses when API key is not configured
-       const fallbackResponses = [
-         "Beep! Hello there! I'm RexBot, your friendly AI companion! *whirr* How can I help you today?",
-         "Greetings, human! RexBot at your service! *processing sounds* What would you like to chat about?",
-         "Hey there! *beep beep* RexBot here, ready to assist! What's on your mind?",
-         "Hello! *whirr* I'm RexBot, your robot friend! How can I make your day better?",
-         "Hi! *beep* RexBot reporting for duty! What can I help you with today?"
-       ];
+      const fallbackResponses = [
+        "Hello! I'm RexBot, your AI receptionist assistant. How can I help you today?",
+        "Good morning! RexBot here, ready to assist with scheduling, time tracking, or any office needs you have.",
+        "Hi there! I'm RexBot, your virtual receptionist. What can I help you with today?",
+        "Welcome! RexBot at your service. I can help with appointments, clock-ins, or general office information.",
+        "Hello! I'm RexBot, your AI receptionist. How may I assist you today?"
+      ];
       
-      const reply = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      // Enhanced fallback logic based on message content
+      let reply;
+      const lowerMessage = message.toLowerCase();
+      
+      if (lowerMessage.includes('schedule') || lowerMessage.includes('meeting') || lowerMessage.includes('appointment')) {
+        reply = "I'd be happy to help you schedule that! Could you please provide the date, time, and who you'd like to meet with?";
+      } else if (lowerMessage.includes('clock in') || lowerMessage.includes('clock out') || lowerMessage.includes('time')) {
+        reply = "Got it! I can help you with time tracking. Are you looking to clock in, clock out, or check your hours?";
+      } else if (lowerMessage.includes('office') || lowerMessage.includes('hours') || lowerMessage.includes('location')) {
+        reply = "I can help with office information! What would you like to know about our office hours, location, or contact details?";
+      } else if (lowerMessage.includes('message') || lowerMessage.includes('note')) {
+        reply = "I'd be happy to take a message for you. Who is it for and what should I tell them?";
+      } else {
+        // Random fallback for general queries
+        reply = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      }
       
       // Update conversation history
       conversation.push(
@@ -80,16 +127,22 @@ async function generateResponse(message, conversationId) {
 
     // Prepare request body for Google Gemini API
     const requestBody = {
-      "prompt": {
-        "messages": messages.map(msg => ({
-          "author": msg.role === 'system' ? 'system' : (msg.role === 'user' ? 'user' : 'assistant'),
-          "content": {
-            "text": msg.content
-          }
-        }))
-      },
-      "temperature": 0.7,
-      "maxOutputTokens": 150
+      "contents": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "text": `${REXBOT_PROMPT}\n\nConversation history:\n${conversation.map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\nUser: ${message}`
+            }
+          ]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 500,
+        "topP": 0.8,
+        "topK": 40
+      }
     };
 
     // Call Gemini AI API
@@ -99,7 +152,7 @@ async function generateResponse(message, conversationId) {
       }
     });
 
-    const reply = response.data.candidates[0].content.text;
+    const reply = response.data.candidates[0].content.parts[0].text;
 
     // Update conversation history
     conversation.push(
@@ -152,16 +205,21 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    service: 'RexBot AI Character API'
+    service: 'RexBot AI Receptionist Assistant API'
   });
 });
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 RexBot AI Character server running on port ${PORT}`);
+  console.log(`🚀 RexBot AI Receptionist Assistant server running on port ${PORT}`);
   console.log(`📱 Frontend available at http://localhost:${PORT}`);
   console.log(`🔧 API health check: http://localhost:${PORT}/api/health`);
-  console.log(`⚠️  Note: Running in demo mode. Set GEMINI_API_KEY in .env for full AI functionality.`);
+  
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
+    console.log(`✅ Gemini AI API configured - Full AI functionality enabled!`);
+  } else {
+    console.log(`⚠️  Note: Running in demo mode. Set GEMINI_API_KEY in .env for full AI functionality.`);
+  }
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use. Please try a different port or stop the existing process.`);

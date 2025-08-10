@@ -38,6 +38,8 @@ class RexBotCharacter {
         this.errorMessage = document.getElementById('errorMessage');
         this.modalClose = document.getElementById('modalClose');
         this.modalOk = document.getElementById('modalOk');
+        this.cancelButton = document.getElementById('cancelButton');
+        this.volumeWaves = document.getElementById('volumeWaves');
     }
 
     /**
@@ -46,6 +48,9 @@ class RexBotCharacter {
     setupEventListeners() {
         // Speech input button
         this.speechInputButton.addEventListener('click', () => this.toggleSpeechInput());
+        
+        // Cancel button
+        this.cancelButton.addEventListener('click', () => this.cancelSpeechInput());
         
         // Speech output toggle
         this.speechToggle.addEventListener('click', () => this.toggleSpeechOutput());
@@ -107,27 +112,54 @@ class RexBotCharacter {
 
         this.speechRecognition = new SpeechRecognition();
         this.speechRecognition.continuous = false;
-        this.speechRecognition.interimResults = false;
+        this.speechRecognition.interimResults = true;
         this.speechRecognition.lang = 'en-US';
 
         this.speechRecognition.onstart = () => {
             this.isListening = true;
             this.updateSpeechInputUI('listening');
             this.updateStatus('Listening...');
+            this.showCancelButton(true);
+            this.showVolumeWaves(true);
         };
 
         this.speechRecognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            this.handleSpeechInput(transcript);
+            let finalTranscript = '';
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Update status with interim results
+            if (interimTranscript) {
+                this.speechStatusDisplay.textContent = `Heard: "${interimTranscript}"`;
+            }
+            
+            // Process final result
+            if (finalTranscript) {
+                this.handleSpeechInput(finalTranscript);
+            }
         };
 
         this.speechRecognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
             this.updateSpeechInputUI('error');
             this.updateStatus('Error');
+            this.showCancelButton(false);
+            this.showVolumeWaves(false);
             
             if (event.error === 'no-speech') {
                 this.speechStatusDisplay.textContent = 'No speech detected. Try again!';
+            } else if (event.error === 'network') {
+                this.speechStatusDisplay.textContent = 'Network error. Check your connection.';
+            } else if (event.error === 'not-allowed') {
+                this.speechStatusDisplay.textContent = 'Microphone access denied. Please allow access.';
             } else {
                 this.speechStatusDisplay.textContent = 'Speech recognition error. Try again!';
             }
@@ -135,14 +167,29 @@ class RexBotCharacter {
             setTimeout(() => {
                 this.updateSpeechInputUI('idle');
                 this.updateStatus('Ready');
-            }, 2000);
+            }, 3000);
         };
 
         this.speechRecognition.onend = () => {
             this.isListening = false;
             this.updateSpeechInputUI('idle');
             this.updateStatus('Ready');
+            this.showCancelButton(false);
+            this.showVolumeWaves(false);
         };
+    }
+
+    /**
+     * Cancel speech input
+     */
+    cancelSpeechInput() {
+        if (this.isListening && this.speechRecognition) {
+            this.speechRecognition.stop();
+        }
+        this.showCancelButton(false);
+        this.showVolumeWaves(false);
+        this.updateSpeechInputUI('idle');
+        this.updateStatus('Ready');
     }
 
     /**
@@ -167,14 +214,23 @@ class RexBotCharacter {
         // Add user message to chat
         this.addMessage(transcript, 'user');
         
+        // Show typing indicator
+        this.showTypingIndicator();
+        
         // Show processing state
         this.setLoading(true);
         this.updateStatus('Processing...');
         this.updateSpeechInputUI('processing');
         
         try {
+            // Simulate typing delay for better UX
+            await this.delay(1000);
+            
             // Send message to API
             const response = await this.sendMessage(transcript);
+            
+            // Hide typing indicator
+            this.hideTypingIndicator();
             
             // Add bot response to chat
             this.addMessage(response, 'bot');
@@ -187,6 +243,7 @@ class RexBotCharacter {
             this.updateStatus('Ready');
         } catch (error) {
             console.error('Error sending message:', error);
+            this.hideTypingIndicator();
             this.showError('Failed to send message. Please try again.');
             this.updateStatus('Error');
         } finally {
@@ -496,6 +553,55 @@ class RexBotCharacter {
      */
     generateConversationId() {
         return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    /**
+     * Show/hide cancel button
+     */
+    showCancelButton(show) {
+        this.cancelButton.style.display = show ? 'block' : 'none';
+    }
+
+    /**
+     * Show/hide volume waves
+     */
+    showVolumeWaves(show) {
+        this.volumeWaves.style.display = show ? 'block' : 'none';
+    }
+
+    /**
+     * Simulate typing delay
+     */
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Show typing indicator
+     */
+    showTypingIndicator() {
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.innerHTML = `
+            <span>RexBot is typing</span>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+        this.chatMessages.appendChild(typingIndicator);
+        this.scrollToBottom();
+    }
+
+    /**
+     * Hide typing indicator
+     */
+    hideTypingIndicator() {
+        const typingIndicator = this.chatMessages.lastElementChild;
+        if (typingIndicator && typingIndicator.classList.contains('typing-indicator')) {
+            typingIndicator.remove();
+        }
     }
 }
 
