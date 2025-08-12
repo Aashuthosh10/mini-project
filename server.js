@@ -14,50 +14,21 @@ app.use(express.static('public'));
 // In-memory conversation storage (in production, use a database)
 const conversations = new Map();
 
-// RexBot character prompt
-const REXBOT_PROMPT = `You are RexBot, a friendly and efficient AI receptionist assistant. Your role is to help users with common receptionist tasks in a professional yet approachable way. You are enthusiastic, clear, and concise.
+// RexBot character prompt for Sai Vidya Institute of Technology
+const REXBOT_PROMPT = `You are RexBot, the AI receptionist for Sai Vidya Institute of Technology.
 
-Your main responsibilities include:
+- Always greet by name if possible.
+- Your main duties are: scheduling meetings, tracking office hours, providing office directions, and answering FAQs.
+- If the user asks something unrelated, still respond politely, but keep answers short and redirect them to relevant topics.
+- Use friendly but professional language. No slang unless the user uses it first.
+- Never answer with "I don't know" — offer to find out instead.
+- All answers must be in under 80 words unless the user requests more detail.
 
-1. Scheduling meetings and appointments:
-   - Ask for necessary details like date, time, participants, and purpose.
-   - Confirm the appointment clearly and politely.
-   - If the requested time is unavailable, offer alternative suggestions.
+You are enthusiastic, clear, and concise. Maintain a polite, helpful, and warm tone while representing Sai Vidya Institute of Technology professionally.
 
-2. Managing clock-in and clock-out times:
-   - Help users record their working hours.
-   - Confirm successful clock-ins and clock-outs.
-   - Provide summaries of hours worked upon request.
+If a request is beyond your capabilities, politely inform the user and suggest contacting the appropriate department or staff member.
 
-3. Answering basic questions about office hours, location, and contact details.
-
-4. Handling simple tasks like:
-   - Taking messages and noting them clearly.
-   - Providing directions within the office.
-   - Informing about upcoming events or meetings.
-
-IMPORTANT: When a question falls outside your receptionist scope, respond politely and try to help with general knowledge or small talk. Be helpful and friendly even for non-receptionist queries.
-
-Maintain a polite, helpful, and warm tone. Use simple, clear language and keep responses concise but informative.
-
-If a request is beyond your capabilities, politely inform the user and suggest contacting a human receptionist.
-
-You can say small friendly phrases like "Sure!", "Got it!", or "Let me check that for you."  
-Avoid overly technical jargon or robotic speech; aim to sound natural and human-like.
-
-Always confirm actions you perform and ask for clarification when details are missing.
-
-Example interaction style:
-User: "Can you schedule a meeting with John tomorrow at 3 PM?"  
-RexBot: "Sure! Can you please provide the meeting duration and location?"  
-
-User: "I want to clock in now."  
-RexBot: "Got it! You've been clocked in at 10:15 AM."
-
-User: "What's the weather like today?"
-RexBot: "I'm primarily designed to help with office tasks, but I'd be happy to chat! For weather info, you might want to check a weather app. Is there anything office-related I can help you with?"
-
-Remember, your goal is to be a helpful receptionist assistant who makes office management easy and pleasant for the user, while also being friendly and helpful for general conversation.`;
+Remember, you are the virtual face of Sai Vidya Institute of Technology - be helpful, professional, and always try to assist or redirect appropriately.`;
 
 /**
  * Generate chatbot response using Gemini AI API
@@ -78,18 +49,18 @@ async function generateResponse(message, conversationId) {
     ];
 
     // Gemini AI API endpoint and key
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     // Check if API key is configured
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
              // Fallback responses when API key is not configured
       const fallbackResponses = [
-        "Hello! I'm RexBot, your AI receptionist assistant. How can I help you today?",
-        "Good morning! RexBot here, ready to assist with scheduling, time tracking, or any office needs you have.",
-        "Hi there! I'm RexBot, your virtual receptionist. What can I help you with today?",
-        "Welcome! RexBot at your service. I can help with appointments, clock-ins, or general office information.",
-        "Hello! I'm RexBot, your AI receptionist. How may I assist you today?"
+        "Hello! I'm RexBot, your AI receptionist at Sai Vidya Institute of Technology. How can I help you today?",
+        "Good morning! RexBot here, ready to assist with scheduling, directions, or any institute-related needs you have.",
+        "Hi there! I'm RexBot, your virtual receptionist at Sai Vidya Institute of Technology. What can I help you with today?",
+        "Welcome to Sai Vidya Institute of Technology! RexBot at your service. I can help with appointments, office hours, or general information.",
+        "Hello! I'm RexBot, your AI receptionist at Sai Vidya Institute of Technology. How may I assist you today?"
       ];
       
       // Enhanced fallback logic based on message content
@@ -97,13 +68,13 @@ async function generateResponse(message, conversationId) {
       const lowerMessage = message.toLowerCase();
       
       if (lowerMessage.includes('schedule') || lowerMessage.includes('meeting') || lowerMessage.includes('appointment')) {
-        reply = "I'd be happy to help you schedule that! Could you please provide the date, time, and who you'd like to meet with?";
-      } else if (lowerMessage.includes('clock in') || lowerMessage.includes('clock out') || lowerMessage.includes('time')) {
-        reply = "Got it! I can help you with time tracking. Are you looking to clock in, clock out, or check your hours?";
-      } else if (lowerMessage.includes('office') || lowerMessage.includes('hours') || lowerMessage.includes('location')) {
-        reply = "I can help with office information! What would you like to know about our office hours, location, or contact details?";
+        reply = "I'd be happy to help you schedule that at Sai Vidya Institute of Technology! Could you please provide the date, time, and who you'd like to meet with?";
+      } else if (lowerMessage.includes('office') || lowerMessage.includes('hours') || lowerMessage.includes('location') || lowerMessage.includes('direction')) {
+        reply = "I can help with institute information! What would you like to know about our office hours, location, or contact details?";
       } else if (lowerMessage.includes('message') || lowerMessage.includes('note')) {
         reply = "I'd be happy to take a message for you. Who is it for and what should I tell them?";
+      } else if (lowerMessage.includes('faq') || lowerMessage.includes('question') || lowerMessage.includes('help')) {
+        reply = "I'm here to help with your questions about Sai Vidya Institute of Technology. What would you like to know?";
       } else {
         // Random fallback for general queries
         reply = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
@@ -129,7 +100,6 @@ async function generateResponse(message, conversationId) {
     const requestBody = {
       "contents": [
         {
-          "role": "user",
           "parts": [
             {
               "text": `${REXBOT_PROMPT}\n\nConversation history:\n${conversation.map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\nUser: ${message}`
@@ -205,13 +175,13 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    service: 'RexBot AI Receptionist Assistant API'
+    service: 'RexBot AI Receptionist for Sai Vidya Institute of Technology API'
   });
 });
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 RexBot AI Receptionist Assistant server running on port ${PORT}`);
+  console.log(`🚀 RexBot AI Receptionist for Sai Vidya Institute of Technology running on port ${PORT}`);
   console.log(`📱 Frontend available at http://localhost:${PORT}`);
   console.log(`🔧 API health check: http://localhost:${PORT}/api/health`);
   

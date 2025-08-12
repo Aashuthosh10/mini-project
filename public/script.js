@@ -609,7 +609,7 @@ class RexBotCharacter {
 document.addEventListener('DOMContentLoaded', () => {
     try {
         window.rexbot = new RexBotCharacter();
-        console.log('🚀 RexBot AI Character initialized successfully');
+        console.log('🚀 RexBot AI Receptionist for Sai Vidya Institute of Technology initialized successfully');
     } catch (error) {
         console.error('Failed to initialize RexBot:', error);
         // Show error to user

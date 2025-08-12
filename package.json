@@ -1,7 +1,7 @@
 {
-  "name": "rexbot-ai-character",
+  "name": "rexbot-ai-receptionist",
   "version": "1.0.0",
-  "description": "A web-based AI character named RexBot with speech input and character-based responses",
+  "description": "RexBot AI Receptionist for Sai Vidya Institute of Technology - A web-based AI receptionist with speech input and intelligent responses",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,7 +16,7 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["ai-character", "rexbot", "speech-input", "speech-synthesis", "chatbot"],
+  "keywords": ["ai-receptionist", "rexbot", "sai-vidya-institute", "speech-input", "speech-synthesis", "chatbot", "institute-assistant"],
   "author": "Your Name",
   "license": "MIT"
 }

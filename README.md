@@ -1,10 +1,10 @@
-# RexBot AI Character
+# RexBot AI Receptionist for Sai Vidya Institute of Technology
 
-A modern web-based AI character named RexBot with speech input and character-based responses.
+A modern web-based AI receptionist named RexBot with speech input and intelligent responses, specifically designed for Sai Vidya Institute of Technology.
 
 ## Features
 
-- 🤖 AI-powered character-based responses
+- 🤖 AI-powered receptionist responses for Sai Vidya Institute of Technology
 - 🎤 Speech input for hands-free interaction
 - 🗣️ Speech synthesis with RexBot's voice
 - 💬 Real-time conversation interface
@@ -24,7 +24,7 @@ A modern web-based AI character named RexBot with speech input and character-bas
 1. **Clone or download the project**
    ```bash
    git clone <repository-url>
-   cd mini-project
+   cd rexbot
    ```
 
 2. **Install dependencies**
@@ -89,7 +89,7 @@ If you see `EADDRINUSE` error:
 ## Project Structure
 
 ```
-mini-project/
+rexbot/
 ├── server.js          # Express server with API endpoints
 ├── package.json       # Dependencies and scripts
 ├── .env              # Environment variables (create from env.example)
